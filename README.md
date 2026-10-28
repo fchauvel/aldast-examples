@@ -16,6 +16,6 @@ Each topic folder has a short README and, when available, its tests.
 | Module | Topic | Languages |
 |---|---|---|
 | Sequences | [Jump search](sequences/jump-search/java) | Java |
-| Sequences | [Fixed and dynamic arrays](sequences/dynamic-array/c) | C, [R](sequences/dynamic-array/r) |
+| Sequences | [Fixed and dynamic arrays](sequences/dynamic-array/c) | C |
 
 Other modules are moved here one at a time.
