@@ -11,4 +11,11 @@ programming language:
 
 Each topic folder has a short README and, when available, its tests.
 
-*Examples will be added soon.*
+## Examples
+
+| Module | Topic | Languages |
+|---|---|---|
+| Sequences | [Jump search](sequences/jump-search/java) | Java |
+| Sequences | [Fixed and dynamic arrays](sequences/dynamic-array/c) | C, [R](sequences/dynamic-array/r) |
+
+Other modules are moved here one at a time.
