@@ -1,0 +1,8 @@
+# Build artifacts
+*.o
+*.class
+*.exe
+*.pyc
+__pycache__/
+*.dSYM/
+a.out
