@@ -22,5 +22,9 @@ Each topic folder has a short README and, when available, its tests.
 | Trees | [Binary heaps](trees/heap/ruby) | Ruby |
 | Trees | [B-trees](trees/btree/ruby) | Ruby |
 | Trees | [Prefix trees](trees/prefix-tree/scala) | Scala (untested) |
+| Graphs | [Edge list](graphs/edge-list/ruby) | Ruby |
+| Graphs | [Adjacency list](graphs/adjacency-list/javascript) | JavaScript |
+| Graphs | [Adjacency matrix](graphs/adjacency-matrix/c) | C |
 
-Other modules are moved here one at a time.
+The examples of the other modules (Foundations, Recursion, Hashing) are
+all in the lecture notes.
