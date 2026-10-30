@@ -17,5 +17,10 @@ Each topic folder has a short README and, when available, its tests.
 |---|---|---|
 | Sequences | [Jump search](sequences/jump-search/java) | Java |
 | Sequences | [Fixed and dynamic arrays](sequences/dynamic-array/c) | C |
+| Trees | [Binary search trees](trees/bst/typescript) | TypeScript |
+| Trees | [AVL trees](trees/avl/python) | Python |
+| Trees | [Binary heaps](trees/heap/ruby) | Ruby |
+| Trees | [B-trees](trees/btree/ruby) | Ruby |
+| Trees | [Prefix trees](trees/prefix-tree/scala) | Scala (untested) |
 
 Other modules are moved here one at a time.
