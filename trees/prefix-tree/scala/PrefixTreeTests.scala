@@ -1,7 +1,7 @@
 // Each test states a property that a prefix tree must have, using a small
 // example. Together, they describe how a prefix tree behaves.
 //
-// Run with: scala run PrefixTree.scala PrefixTreeTests.scala
+// Run with: scala run . --main-class runPrefixTreeTests
 
 
 // The words of the figure of the lecture notes
@@ -10,7 +10,7 @@ val figureWords = Set(
 )
 
 
-@main def runTests(): Unit =
+@main def runPrefixTreeTests(): Unit =
 
   // -- Creating a tree
 
@@ -165,26 +165,3 @@ def prefixesOf(words: Set[String]): Set[String] =
     word <- words
     length <- 0 to word.length
   yield word.take(length)
-
-def assertTrue(condition: Boolean): Unit =
-  if !condition then
-    throw AssertionError("expected true, but got false")
-
-def assertFalse(condition: Boolean): Unit =
-  if condition then
-    throw AssertionError("expected false, but got true")
-
-def assertEquals(actual: Any, expected: Any): Unit =
-  if actual != expected then
-    throw AssertionError(s"expected $expected, but got $actual")
-
-// Runs one test, and reports whether it passed
-def test(description: String)(body: => Unit): Unit =
-  try
-    body
-    println("ok      " + description)
-  catch
-    case failure: Throwable =>
-      println("FAILED  " + description + ": " + failure)
-      sys.exit(1)
-
