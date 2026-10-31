@@ -6,8 +6,8 @@ notes.
 
 - `PrefixTree.scala` stores a set of words and offers `add`, `remove`,
   `contains` and `prefixSearch`.
-- `SuffixTree.scala` finds where a pattern occurs in a text. It stores
-  all the suffixes of the text in a `PrefixTree`.
+- `SuffixTree.scala` finds where a fragment occurs in a text. It stores
+  all the suffixes of the text in a `PrefixTree`, and offers a single operation, `find`.
 - `PrefixTreeTests.scala` and `SuffixTreeTests.scala` hold the tests, and
   `Testing.scala` the few helpers they use.
 

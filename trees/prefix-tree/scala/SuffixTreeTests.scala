@@ -6,66 +6,68 @@
 
 @main def runSuffixTreeTests(): Unit =
 
-  // -- Finding out whether a pattern occurs
+  // -- Fragments that occur
 
-  test("every piece of the text occurs in it"):
+  test("a fragment that occurs once is found once"):
+    val tree = SuffixTree("banana")
+    assertEquals(tree.find("ban"), List(0))
+    assertEquals(tree.find("nana"), List(2))
+    assertEquals(tree.find("banana"), List(0))
+
+  test("a fragment that occurs several times is found everywhere"):
+    val tree = SuffixTree("banana")
+    assertEquals(tree.find("na"), List(2, 4))
+    assertEquals(tree.find("a"), List(1, 3, 5))
+
+  test("occurrences may overlap"):
+    val tree = SuffixTree("banana")
+    assertEquals(tree.find("ana"), List(1, 3))
+
+  test("every fragment of the text is found where it starts"):
     val text = "banana"
     val tree = SuffixTree(text)
     for start <- 0 to text.length do
       for end <- start to text.length do
-        assertTrue(tree.contains(text.substring(start, end)))
-
-  test("the whole text occurs in itself"):
-    val tree = SuffixTree("banana")
-    assertTrue(tree.contains("banana"))
-
-  test("something that is not a piece of the text does not occur in it"):
-    val tree = SuffixTree("banana")
-    assertFalse(tree.contains("nab"))
-    assertFalse(tree.contains("bananas"))
-    assertFalse(tree.contains("x"))
-
-  test("the empty pattern occurs in any text, even an empty one"):
-    assertTrue(SuffixTree("banana").contains(""))
-    assertTrue(SuffixTree("").contains(""))
-
-  test("nothing but the empty pattern occurs in an empty text"):
-    assertFalse(SuffixTree("").contains("a"))
-
-
-  // -- Finding where a pattern occurs
-
-  test("a pattern that occurs once is found once"):
-    val tree = SuffixTree("banana")
-    assertEquals(tree.occurrences("ban"), List(0))
-    assertEquals(tree.occurrences("banana"), List(0))
-
-  test("a pattern that occurs several times is found everywhere"):
-    val tree = SuffixTree("banana")
-    assertEquals(tree.occurrences("na"), List(2, 4))
-    assertEquals(tree.occurrences("a"), List(1, 3, 5))
-
-  test("occurrences may overlap"):
-    val tree = SuffixTree("banana")
-    assertEquals(tree.occurrences("ana"), List(1, 3))
-
-  test("a pattern that does not occur is found nowhere"):
-    val tree = SuffixTree("banana")
-    assertEquals(tree.occurrences("nab"), List())
+        val fragment = text.substring(start, end)
+        assertTrue(tree.find(fragment).contains(start))
 
   test("in a longer text"):
     val tree = SuffixTree("mississippi")
-    assertEquals(tree.occurrences("issi"), List(1, 4))
-    assertEquals(tree.occurrences("ss"), List(2, 5))
-    assertEquals(tree.occurrences("pp"), List(8))
+    assertEquals(tree.find("issi"), List(1, 4))
+    assertEquals(tree.find("ss"), List(2, 5))
+    assertEquals(tree.find("pp"), List(8))
 
-  test("the occurrences are exactly the places where the pattern starts"):
+
+  // -- Fragments that do not occur
+
+  test("a fragment that does not occur is found nowhere"):
+    val tree = SuffixTree("banana")
+    assertEquals(tree.find("nab"), List())
+    assertEquals(tree.find("bananas"), List())
+    assertEquals(tree.find("x"), List())
+
+
+  // -- The empty fragment and the empty text
+
+  test("the empty fragment is found everywhere, including at the very end"):
+    val tree = SuffixTree("banana")
+    assertEquals(tree.find(""), List(0, 1, 2, 3, 4, 5, 6))
+
+  test("only the empty fragment is found in an empty text"):
+    val tree = SuffixTree("")
+    assertEquals(tree.find(""), List(0))
+    assertEquals(tree.find("a"), List())
+
+
+  // -- All the properties, at once
+
+  test("a fragment is found exactly where it starts in the text"):
     val text = "mississippi"
     val tree = SuffixTree(text)
     for start <- 0 to text.length do
       for end <- start to text.length do
-        val pattern = text.substring(start, end)
-        val expected = (0 to text.length).filter(i => text.startsWith(pattern, i)).toList
-        assertEquals(tree.occurrences(pattern), expected)
+        val fragment = text.substring(start, end)
+        val expected = (0 to text.length).filter(i => text.startsWith(fragment, i)).toList
+        assertEquals(tree.find(fragment), expected)
 
   println("All tests passed.")
