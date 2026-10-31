@@ -18,7 +18,7 @@ class SuffixTree(text: String):
 
   // Where does the fragment start in the text? The first character has
   // position 0. There is no position when the fragment does not occur.
-  def find(fragment: String): List[Int] =
+  def find(fragment: String): Seq[Int] =
     val matchingSuffixes = suffixes.prefixSearch(fragment)
     val positions = matchingSuffixes.map(suffix => text.length - suffix.length)
-    positions.toList.sorted
+    positions.toSeq.sorted
