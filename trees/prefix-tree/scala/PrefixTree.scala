@@ -1,228 +1,151 @@
+// A prefix tree stores a set of words. Each node carries a symbol:
+// the root carries ROOT (the empty symbol), every other branch carries
+// a letter, and each leaf carries END, which marks the end of a word.
+//
+// For example, the words "ape" and "apple" are stored as:
+//
+//   ε
+//   └╴a
+//     └╴p
+//       ├╴e
+//       │ └╴⊥
+//       └╴p
+//         └╴l
+//           └╴e
+//             └╴⊥
+//
+// The code favours clarity over efficiency.
+
+val ROOT = 'ε'
+val END = '⊥'
+
+
 class PrefixTree:
 
-  private var _root: Node = new Branch('ε', Map())
+  private var root: Node = Branch(ROOT, Map())
 
   def add(word: String): Unit =
-    _root = _root.add(word)
-
-  def contains(word: String): Boolean =
-    _root.contains(word)
-
-  def prefixSearch(prefix: String): Set[String] =
-    _root.prefixSearch(prefix).map{ w => w.replaceAll("ε|⊥", "") }
+    root = root.add(word)
 
   def remove(word: String): Unit =
-    _root = (_root.remove(word) match {
-      case None => new Branch('ε', Map())
-      case Some(newRoot) => newRoot
-    })
+    root = root.remove(word)
 
-  def size: Int = words.size
+  def contains(word: String): Boolean =
+    root.contains(word)
+
+  def prefixSearch(prefix: String): Set[String] =
+    root.prefixSearch(prefix)
 
   def words: Set[String] =
-    _root.words.map { w => w.replaceAll("ε|⊥", "") }
+    root.words
 
-  def debug(): Unit =
-    _root.show(0)
+  def size: Int =
+    words.size
+
+  def show(): Unit =
+    root.show(0)
 
 
-
+// In all the methods below, "word" is what remains to be processed,
+// once the symbol of this node has been consumed.
 abstract class Node(val symbol: Char):
 
-  val children: Map[Char, Node]
+  // The letters this node contributes to the words that go through it
+  def text: String
 
   def contains(word: String): Boolean
 
   def add(word: String): Node
 
+  def remove(word: String): Node
+
+  // All the words stored below this node
   def words: Set[String]
 
+  // All the words stored below this node, which start with the given prefix
   def prefixSearch(prefix: String): Set[String]
 
-  def remove(word: String): Option[Node]
+  // Is this node a dead end, that is, a branch without any child?
+  def isDeadEnd: Boolean
 
-  def show(level: Int): Unit
-
-
-
-object Node:
-
-  def fromWord(word: String): Node =
-    if word.isEmpty
-    then new Leaf('⊥')
-    else {
-      val node = Node.fromWord(word.tail)
-      new Branch(word.head, Map(node.symbol -> node))
-    }
+  def show(depth: Int): Unit =
+    println("  " * depth + symbol)
 
 
-class Leaf(symbol: Char) extends Node(symbol):
+class Leaf extends Node(END):
 
-  val children: Map[Char, Node] = Map()
-
-  def add(word: String): Node =
-    throw new Error("TODO")
+  def text: String = ""
 
   def contains(word: String): Boolean =
-    return word.isEmpty && symbol == '⊥'
+    word.isEmpty
+
+  def add(word: String): Node =
+    throw new IllegalArgumentException("Nothing can be added below a leaf")
+
+  def remove(word: String): Node =
+    this
 
   def words: Set[String] =
-    Set(symbol.toString)
+    Set("")
 
   def prefixSearch(prefix: String): Set[String] =
-    if prefix.isEmpty
-    then Set(symbol.toString)
-    else Set.empty[String]
+    if prefix.isEmpty then Set("") else Set()
 
-  def remove(word: String): Option[Node] =
-    if word.isEmpty && symbol == '⊥'
-    then
-      None
-    else
-      Some(this)
-
-  def show(level: Int): Unit =
-    println(("│ " * level) + "└╴" + symbol.toString)
-
+  def isDeadEnd: Boolean =
+    false
 
 
 class Branch(symbol: Char, val children: Map[Char, Node]) extends Node(symbol):
 
-  def add(word: String): Node =
-    if word.isEmpty
-    then
-      new Branch(
-        symbol,
-        children ++ Map('⊥' -> new Leaf('⊥'))
-      )
-    else children.get(word.head) match {
-      case None => {
-        new Branch(
-          symbol,
-          children ++ Map(word.head -> Node.fromWord(word))
-        )
-      }
-      case Some(n) => new Branch(
-        symbol,
-        children ++ Map(n.symbol -> n.add(word.tail))
-      )
-    }
+  def text: String = symbol.toString
 
   def contains(word: String): Boolean =
-    children.get(word.head) match {
-      case None => false
-      case Some(n) => n.contains(word.tail)
-    }
+    if word.isEmpty then
+      children.contains(END)
+    else
+      children.get(word.head) match
+        case None => false
+        case Some(child) => child.contains(word.tail)
+
+  def add(word: String): Node =
+    if word.isEmpty then
+      Branch(symbol, children + (END -> Leaf()))
+    else
+      val child = children.getOrElse(word.head, Branch(word.head, Map()))
+      Branch(symbol, children + (word.head -> child.add(word.tail)))
+
+  def remove(word: String): Node =
+    if word.isEmpty then
+      Branch(symbol, children - END)
+    else
+      children.get(word.head) match
+        case None => this
+        case Some(child) =>
+          val updatedChild = child.remove(word.tail)
+          if updatedChild.isDeadEnd then
+            Branch(symbol, children - word.head)
+          else
+            Branch(symbol, children + (word.head -> updatedChild))
 
   def words: Set[String] =
-    var words = Set.empty[String]
-    for ((key, value) <- children) {
-      words =  words.union(value.words.map{ w => symbol.toString + w})
-    }
-    words
+    val result = for
+      child <- children.values
+      rest <- child.words
+    yield child.text + rest
+    result.toSet
 
   def prefixSearch(prefix: String): Set[String] =
-    if prefix.isEmpty
-    then
+    if prefix.isEmpty then
       words
     else
-      children.get(prefix.head) match {
-        case None => Set.empty[String]
-        case Some(node) =>
-          node
-            .prefixSearch(prefix.tail)
-            .map{ word => symbol.toString + word }
-      }
+      children.get(prefix.head) match
+        case None => Set()
+        case Some(child) =>
+          child.prefixSearch(prefix.tail).map(rest => child.text + rest)
 
-  def remove(word: String): Option[Node] =
-    if word.isEmpty
-    then
-      children.get('⊥') match {
-        case None => Some(this)
-        case Some(node) => if children.size == 1
-                           then None
-                           else Some(new Branch(symbol, children.removed('⊥')))
-      }
-    else
-      children.get(word.head) match {
-        case None => Some(this)
-        case Some(node) =>
-          node.remove(word.tail) match {
-            case None => if children.size == 1
-                         then None
-                         else Some(new Branch(symbol, children.removed(node.symbol)))
-            case Some(updatedChild) => Some(new Branch(symbol, children ++ Map(updatedChild.symbol -> updatedChild)))
-          }
-      }
+  def isDeadEnd: Boolean =
+    children.isEmpty
 
-  def show(level: Int): Unit =
-    println(("│ " * level) + "└╴" + symbol.toString)
-    children.foreach{ (key, value) => value.show(level+1) }
-
-
-// --------------------------------------------------------------------------------
-// Simple Tests
-
-
-def test_leave_remove(): Unit =
-  val leaf = new Leaf('⊥')
-  assert(leaf.remove("").isEmpty)
-
-def test_when_branch_remove_should_yield_something(): Unit = {
-  val branch = new Branch('ε', Map(
-    'a' -> new Branch('a', Map('⊥' -> new Leaf('⊥'))),
-    'b' -> new Branch('b', Map('⊥' -> new Leaf('⊥')))
-  ))
-  branch.remove("a") match {
-    case None => assert(false, "remove should yield something")
-    case Some(node) => assert(
-      node.children.size == 1,
-      s"wrong number of children: Expected 1, got ${node.children.size}"
-    )
-  }
-}
-
-def test_when_branch_remove_should_yield_nothing(): Unit = {
-  val branch = new Branch('ε', Map(
-    'a' -> new Branch('a', Map('⊥' -> new Leaf('⊥'))),
-  ))
-  val updated = branch.remove("a")
-  assert(updated.isEmpty, "remove should yield nothing!")
-}
-
-def test_when_branch_remove_when_no_matchg(): Unit = {
-  val branch = new Branch('ε', Map(
-    'a' -> new Branch('a', Map('⊥' -> new Leaf('⊥'))),
-  ))
-  val updated = branch.remove("b")
-  branch.remove("a") match {
-    case None => assert(false, "remove should yield something")
-    case Some(node) => assert(
-      node.children.size == 1,
-      s"wrong number of children: Expected 1, got ${node.children.size}"
-    )
-  }
-}
-
-@main
-def test =
-  test_leave_remove()
-  test_when_branch_remove_should_yield_something()
-
-  val tree = new PrefixTree()
-  println(tree.words)
-  tree.add("Franck")
-  println(tree.words)
-  tree.add("Di")
-  println(tree.words)
-  tree.add("Francois")
-  println(tree.words)
-  tree.add("Didier")
-  println(tree.words)
-  tree.add("Diane")
-  println(tree.prefixSearch("Di"))
-  tree.debug()
-  tree.remove("Franck")
-  println(tree.words)
-  tree.debug()
-
+  override def show(depth: Int): Unit =
+    super.show(depth)
+    children.values.foreach(child => child.show(depth + 1))

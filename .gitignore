@@ -6,3 +6,5 @@
 __pycache__/
 *.dSYM/
 a.out
+.scala-build/
+.bsp/
