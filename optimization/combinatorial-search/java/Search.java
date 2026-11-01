@@ -66,28 +66,26 @@ public class Search {
         return Optional.empty();
     }
 
-    // The best solution, with branch-and-bound. We keep the *floor*: the highest
-    // lower bound we have seen, that is, the value we are sure to reach. We give
-    // up on a configuration that cannot beat what we already have.
+    // The best solution, with branch-and-bound. Once we have found a solution, we
+    // give up on a configuration if even its upper bound is no better than it
     public static <C> Optional<C> branchAndBound(OptimizationProblem<C> problem) {
-        var progress = new Progress<C>();
-        branchAndBound(problem, problem.empty(), progress);
-        return Optional.ofNullable(progress.best);
+        var best = new Best<C>();
+        branchAndBound(problem, problem.empty(), best);
+        return Optional.ofNullable(best.solution);
     }
 
-    private static <C> void branchAndBound(OptimizationProblem<C> problem, C configuration, Progress<C> progress) {
+    private static <C> void branchAndBound(OptimizationProblem<C> problem, C configuration, Best<C> best) {
         if (!problem.isValid(configuration)) {
             return;
         }
-        progress.floor = Math.max(progress.floor, problem.lowerBound(configuration));
-        if (progress.isHopeless(problem, configuration)) {
+        if (best.isAtLeastAsGoodAs(problem, configuration)) {
             return;
         }
         if (problem.isComplete(configuration)) {
-            progress.keepIfBetter(problem, configuration);
+            best.solution = configuration;
         } else {
             for (var next : problem.children(configuration)) {
-                branchAndBound(problem, next, progress);
+                branchAndBound(problem, next, best);
             }
         }
     }
@@ -100,43 +98,32 @@ public class Search {
         );
         promising.add(problem.empty());
 
-        var progress = new Progress<C>();
+        var best = new Best<C>();
         while (!promising.isEmpty()) {
             var configuration = promising.poll();
             if (!problem.isValid(configuration)) {
                 continue;
             }
-            progress.floor = Math.max(progress.floor, problem.lowerBound(configuration));
-            if (progress.isHopeless(problem, configuration)) {
+            if (best.isAtLeastAsGoodAs(problem, configuration)) {
                 break; // The most promising one is not promising enough: we are done
             }
             if (problem.isComplete(configuration)) {
-                progress.keepIfBetter(problem, configuration);
+                best.solution = configuration;
             } else {
                 promising.addAll(problem.children(configuration));
             }
         }
-        return Optional.ofNullable(progress.best);
+        return Optional.ofNullable(best.solution);
     }
 
-    // What we know so far: the best solution found, and the value we are sure
-    // to reach, even if we have not found the solution yet
-    private static class Progress<C> {
-        C best = null;
-        int floor = Integer.MIN_VALUE;
+    // The best solution found so far, if any
+    private static class Best<C> {
+        C solution = null;
 
-        // Is it pointless to explore this configuration? It is if it cannot reach
-        // the floor, or if it cannot do better than the best solution we hold.
-        boolean isHopeless(OptimizationProblem<C> problem, C configuration) {
-            int upperBound = problem.upperBound(configuration);
-            return upperBound < floor
-                || (best != null && upperBound <= problem.value(best));
-        }
-
-        void keepIfBetter(OptimizationProblem<C> problem, C solution) {
-            if (best == null || problem.value(solution) > problem.value(best)) {
-                best = solution;
-            }
+        // Is the best solution at least as good as anything this configuration
+        // can lead to? Before we have found any solution, nothing is.
+        boolean isAtLeastAsGoodAs(OptimizationProblem<C> problem, C configuration) {
+            return solution != null && problem.upperBound(configuration) <= problem.value(solution);
         }
     }
 }

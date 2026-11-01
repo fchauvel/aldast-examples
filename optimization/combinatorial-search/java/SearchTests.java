@@ -110,22 +110,16 @@ public class SearchTests extends Testing {
             assertTrue(withBound.expanded.size() < withPruning.expanded.size());
         });
 
-        test("the bounds bracket every solution below a configuration", () -> {
+        test("the upper bound never underestimates what we can still get", () -> {
             var problem = box(10);
-            checkBracketsBelow(problem, problem.empty());
+            checkUpperBoundsBelow(problem, problem.empty());
         });
 
-        test("at a solution, both bounds are its value", () -> {
+        test("at a solution, the upper bound is its value", () -> {
             var problem = box(10);
             for (var solution : Search.withPruning(problem)) {
-                assertEquals(problem.lowerBound(solution), problem.value(solution));
                 assertEquals(problem.upperBound(solution), problem.value(solution));
             }
-        });
-
-        test("from a valid configuration, we can reach a solution worth the lower bound", () -> {
-            var problem = box(10);
-            checkLowerBoundsAreReachable(problem, problem.empty());
         });
 
         test("the order of the choices changes the work, not the result", () -> {
@@ -194,9 +188,9 @@ public class SearchTests extends Testing {
         return new Knapsack(items(), capacity);
     }
 
-    // Checks that, for every configuration, the value of every solution below
-    // it is between its lower and its upper bound. Returns these solutions.
-    static <C> List<Integer> checkBracketsBelow(OptimizationProblem<C> problem, C configuration) {
+    // Checks that the upper bound of every configuration is at least what the
+    // best solution below it is worth. Returns the values of these solutions.
+    static <C> List<Integer> checkUpperBoundsBelow(OptimizationProblem<C> problem, C configuration) {
         var values = new ArrayList<Integer>();
         if (problem.isComplete(configuration)) {
             if (problem.isValid(configuration)) {
@@ -204,31 +198,11 @@ public class SearchTests extends Testing {
             }
         } else {
             for (var next : problem.children(configuration)) {
-                values.addAll(checkBracketsBelow(problem, next));
+                values.addAll(checkUpperBoundsBelow(problem, next));
             }
         }
         for (var value : values) {
-            assertTrue(problem.lowerBound(configuration) <= value);
             assertTrue(value <= problem.upperBound(configuration));
-        }
-        return values;
-    }
-
-    // Checks that, from every valid configuration, there is a solution worth at
-    // least the lower bound. Returns the values of the solutions below.
-    static <C> List<Integer> checkLowerBoundsAreReachable(OptimizationProblem<C> problem, C configuration) {
-        var values = new ArrayList<Integer>();
-        if (problem.isComplete(configuration)) {
-            if (problem.isValid(configuration)) {
-                values.add(problem.value(configuration));
-            }
-        } else {
-            for (var next : problem.children(configuration)) {
-                values.addAll(checkLowerBoundsAreReachable(problem, next));
-            }
-        }
-        if (problem.isValid(configuration)) {
-            assertTrue(values.stream().anyMatch(value -> value >= problem.lowerBound(configuration)));
         }
         return values;
     }

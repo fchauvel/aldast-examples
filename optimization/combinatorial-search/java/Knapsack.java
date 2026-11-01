@@ -45,11 +45,6 @@ public class Knapsack implements OptimizationProblem<List<Boolean>> {
         return valueOfTakenItems(solution);
     }
 
-    // At worst, we leave all the items we have not decided about
-    public int lowerBound(List<Boolean> configuration) {
-        return valueOfTakenItems(configuration);
-    }
-
     // At best, we will be able to take all the items we have not decided about
     public int upperBound(List<Boolean> configuration) {
         int total = valueOfTakenItems(configuration);
