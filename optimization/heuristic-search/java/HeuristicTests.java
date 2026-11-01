@@ -45,6 +45,35 @@ public class HeuristicTests extends Testing {
             }
         });
 
+        test("if we allow swaps, a box has more neighbours", () -> {
+            var withoutSwaps = boxStartingWith("laptop", "music instruments");
+            var withSwaps = boxWithSwapsStartingWith("laptop", "music instruments");
+            var swapped = Set.of("cooking tools", "music instruments");
+            assertFalse(withoutSwaps.neighbours(withoutSwaps.initial()).contains(swapped));
+            assertTrue(withSwaps.neighbours(withSwaps.initial()).contains(swapped));
+        });
+
+        test("if we allow swaps, the graph of solutions has more edges", () -> {
+            int edgesWithoutSwaps = 0;
+            int edgesWithSwaps = 0;
+            for (var solution : allSolutions(box())) {
+                edgesWithoutSwaps += box().neighbours(solution).size();
+                edgesWithSwaps += boxWithSwapsStartingWith().neighbours(solution).size();
+            }
+            assertEquals(edgesWithoutSwaps / 2, 12);   // each edge is seen from both ends
+            assertEquals(edgesWithSwaps / 2, 23);
+        });
+
+        test("with swaps, being neighbours is still mutual, and there are no new solutions", () -> {
+            var space = boxWithSwapsStartingWith();
+            assertEquals(allSolutions(space), allSolutions(box()));
+            for (var solution : allSolutions(space)) {
+                for (var neighbour : space.neighbours(solution)) {
+                    assertTrue(space.neighbours(neighbour).contains(solution));
+                }
+            }
+        });
+
         test("nine boxes can be filled without breaking the limit", () -> {
             assertEquals(allSolutions(box()).size(), 9);
         });
@@ -216,6 +245,29 @@ public class HeuristicTests extends Testing {
         });
 
 
+        test("with swaps, the best box is the only local optimum", () -> {
+            var space = boxWithSwapsStartingWith();
+            var fitnessOfLocalOptima = new TreeSet<Integer>();
+            for (var solution : allSolutions(space)) {
+                boolean beaten = false;
+                for (var neighbour : space.neighbours(solution)) {
+                    beaten = beaten || space.fitness(neighbour) > space.fitness(solution);
+                }
+                if (!beaten) {
+                    fitnessOfLocalOptima.add(space.fitness(solution));
+                }
+            }
+            assertEquals(fitnessOfLocalOptima, new TreeSet<>(List.of(16000)));
+        });
+
+        test("with swaps, hill climbing finds the best box from anywhere", () -> {
+            for (var start : allSolutions(box())) {
+                var space = new KnapsackSpace(items(), 10, start, true);
+                assertEquals(space.fitness(Heuristics.hillClimbing(space)), 16000);
+            }
+        });
+
+
         // -- Simulated annealing
 
         test("a better move is always accepted", () -> {
@@ -273,6 +325,10 @@ public class HeuristicTests extends Testing {
 
     static KnapsackSpace boxStartingWith(String... names) {
         return boxStartingWith(Set.of(names));
+    }
+
+    static KnapsackSpace boxWithSwapsStartingWith(String... names) {
+        return new KnapsackSpace(items(), 10, Set.of(names), true);
     }
 
     static KnapsackSpace boxStartingWith(Set<String> solution) {

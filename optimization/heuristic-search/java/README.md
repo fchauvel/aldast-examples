@@ -7,7 +7,7 @@ Random walk, hill climbing and simulated annealing, on the knapsack, from the
   start from, the neighbours of a solution, and its fitness.
 - `KnapsackSpace.java` is the knapsack as a search space: a solution is a set
   of items, and its neighbours are the sets we get by adding or removing one
-  item.
+  item, or, if we allow it, by swapping an item of the box for a missing one.
 - `Heuristics.java` has the searches: `randomWalk`, `hillClimbing` (and
   `climb`, which gives the solutions it goes through), `tabuSearch` (and
   `tabuWalk`) and `simulatedAnnealing`.
