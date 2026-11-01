@@ -25,6 +25,7 @@ Each topic folder has a short README and, when available, its tests.
 | Graphs | [Edge list](graphs/edge-list/ruby) | Ruby |
 | Graphs | [Adjacency list](graphs/adjacency-list/javascript) | JavaScript |
 | Graphs | [Adjacency matrix](graphs/adjacency-matrix/c) | C |
+| Graphs | [Minimum spanning trees](graphs/minimum-spanning-tree/java) | Java |
 
 The examples of the other modules (Foundations, Recursion, Hashing) are
 all in the lecture notes.
