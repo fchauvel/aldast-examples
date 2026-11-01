@@ -1,4 +1,5 @@
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -115,6 +116,106 @@ public class HeuristicTests extends Testing {
         });
 
 
+        // -- Tabu search
+
+        test("tabu search escapes the local optimum where hill climbing is stuck", () -> {
+            var space = boxStartingWith("laptop");
+            assertEquals(space.fitness(Heuristics.hillClimbing(space)), 12000);
+            assertEquals(space.fitness(Heuristics.tabuSearch(space, 10, 3)), 16000);
+        });
+
+        test("tabu search accepts a worse move, to leave a local optimum", () -> {
+            var space = boxStartingWith("laptop");
+            var path = Heuristics.tabuWalk(space, 10, 3);
+            // laptop, then music instruments (better), then a worse box
+            assertEquals(path.get(1), Set.of("laptop", "music instruments"));
+            assertEquals(path.get(2), Set.of("music instruments"));
+            assertTrue(space.fitness(path.get(2)) < space.fitness(path.get(1)));
+        });
+
+        test("tabu search does not go back to the last solutions it went through", () -> {
+            var space = box();
+            var path = Heuristics.tabuWalk(space, 50, 3);
+            for (int i = 0; i < path.size(); i++) {
+                for (int j = i + 1; j < path.size() && j <= i + 3; j++) {
+                    assertFalse(path.get(i).equals(path.get(j)));
+                }
+            }
+        });
+
+        test("tabu search stops when every neighbour is tabu", () -> {
+            var space = box();
+            var path = Heuristics.tabuWalk(space, 100, 10);   // a memory of 10 solutions, out of 9
+            assertTrue(path.size() < 101);   // we stopped before the 100 steps
+        });
+
+
+        // -- Several objectives: the Pareto front
+
+        test("a lighter and more valuable box dominates another one", () -> {
+            var light = new Pareto.Candidate("music instruments and books", 5, 13000);
+            var heavy = new Pareto.Candidate("laptop and music instruments", 9, 12000);
+            assertTrue(Pareto.dominates(light, heavy));
+            assertFalse(Pareto.dominates(heavy, light));
+        });
+
+        test("a box does not dominate itself", () -> {
+            var box = new Pareto.Candidate("books", 3, 4000);
+            assertFalse(Pareto.dominates(box, box));
+        });
+
+        test("a lighter box that is less valuable is not dominated: it is a compromise", () -> {
+            var light = new Pareto.Candidate("music instruments", 2, 9000);
+            var valuable = new Pareto.Candidate("music instruments and cooking tools", 10, 16000);
+            assertFalse(Pareto.dominates(light, valuable));
+            assertFalse(Pareto.dominates(valuable, light));
+        });
+
+        test("six boxes are the best compromises between weight and value", () -> {
+            var front = Pareto.front(allBoxes());
+            var names = new TreeSet<String>();
+            for (var candidate : front) {
+                names.add(candidate.name());
+            }
+            assertEquals(names, new TreeSet<>(List.of(
+                "nothing",
+                "music instruments",
+                "music instruments + books",
+                "music instruments + cooking tools",
+                "music instruments + books + cooking tools",
+                "music instruments + laptop + books + cooking tools"
+            )));
+        });
+
+        test("no box of the front is dominated by another box", () -> {
+            var boxes = allBoxes();
+            for (var onFront : Pareto.front(boxes)) {
+                for (var other : boxes) {
+                    assertFalse(Pareto.dominates(other, onFront));
+                }
+            }
+        });
+
+        test("every box that is not on the front is dominated by a box of the front", () -> {
+            var boxes = allBoxes();
+            var front = Pareto.front(boxes);
+            for (var box : boxes) {
+                if (!front.contains(box)) {
+                    assertTrue(front.stream().anyMatch(other -> Pareto.dominates(other, box)));
+                }
+            }
+        });
+
+        test("the best box within 10 kg is one of the compromises", () -> {
+            var best = allBoxes().stream()
+                .filter(box -> box.cost() <= 10)
+                .max((first, second) -> Integer.compare(first.gain(), second.gain()))
+                .get();
+            assertEquals(best.gain(), 16000);
+            assertTrue(Pareto.front(allBoxes()).contains(best));
+        });
+
+
         // -- Simulated annealing
 
         test("a better move is always accepted", () -> {
@@ -176,6 +277,27 @@ public class HeuristicTests extends Testing {
 
     static KnapsackSpace boxStartingWith(Set<String> solution) {
         return new KnapsackSpace(items(), 10, solution);
+    }
+
+    // Every way to fill a box with the items of the lecture, with its weight and
+    // its value, whether the box can carry it or not
+    static List<Pareto.Candidate> allBoxes() {
+        var items = items();
+        var boxes = new ArrayList<Pareto.Candidate>();
+        for (int mask = 0; mask < (1 << items.size()); mask++) {
+            var names = new ArrayList<String>();
+            int weight = 0;
+            int value = 0;
+            for (int i = 0; i < items.size(); i++) {
+                if ((mask & (1 << i)) != 0) {
+                    names.add(items.get(i).name());
+                    weight += items.get(i).weight();
+                    value += items.get(i).value();
+                }
+            }
+            boxes.add(new Pareto.Candidate(names.isEmpty() ? "nothing" : String.join(" + ", names), weight, value));
+        }
+        return boxes;
     }
 
     // All the solutions we can reach, by moving from neighbour to neighbour

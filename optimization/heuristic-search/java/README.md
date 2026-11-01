@@ -9,8 +9,9 @@ Random walk, hill climbing and simulated annealing, on the knapsack, from the
   of items, and its neighbours are the sets we get by adding or removing one
   item.
 - `Heuristics.java` has the searches: `randomWalk`, `hillClimbing` (and
-  `climb`, which gives the solutions it goes through) and
-  `simulatedAnnealing`.
+  `climb`, which gives the solutions it goes through), `tabuSearch` (and
+  `tabuWalk`) and `simulatedAnnealing`.
+- `Pareto.java` finds the best compromises between two objectives.
 - `HeuristicTests.java` holds the tests, and `Testing.java` the few helpers
   they use. The random searches use a seed, so the tests give the same results
   every time.

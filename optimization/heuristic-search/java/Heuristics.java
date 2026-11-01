@@ -26,7 +26,7 @@ public class Heuristics {
         var current = space.initial();
         path.add(current);
         while (true) {
-            var best = bestNeighbour(space, current);
+            var best = bestNeighbour(space, current, List.of());
             if (best.isEmpty() || space.fitness(best.get()) <= space.fitness(current)) {
                 return path;
             }
@@ -63,6 +63,42 @@ public class Heuristics {
         return best;
     }
 
+    // Tabu search: we always move to the best neighbour, even if it is worse than
+    // where we are, but never to one of the last solutions we went through (the
+    // tabu ones). The tenure is how many solutions we remember. These are the
+    // solutions we go through.
+    public static <S> List<S> tabuWalk(SearchSpace<S> space, int steps, int tenure) {
+        var path = new ArrayList<S>();
+        var current = space.initial();
+        path.add(current);
+        var tabu = new ArrayList<S>();
+        tabu.add(current);
+        for (int step = 0; step < steps; step++) {
+            var next = bestNeighbour(space, current, tabu);
+            if (next.isEmpty()) {
+                break;
+            }
+            current = next.get();
+            path.add(current);
+            tabu.add(current);
+            if (tabu.size() > tenure) {
+                tabu.remove(0);
+            }
+        }
+        return path;
+    }
+
+    // The best solution we have gone through
+    public static <S> S tabuSearch(SearchSpace<S> space, int steps, int tenure) {
+        var best = space.initial();
+        for (var solution : tabuWalk(space, steps, tenure)) {
+            if (space.fitness(solution) > space.fitness(best)) {
+                best = solution;
+            }
+        }
+        return best;
+    }
+
     // How likely we accept a move that changes the fitness by this much. A better
     // move is always accepted. A worse move is less likely when it loses more,
     // and when the temperature is low.
@@ -73,9 +109,12 @@ public class Heuristics {
         return Math.exp(change / temperature);
     }
 
-    private static <S> Optional<S> bestNeighbour(SearchSpace<S> space, S solution) {
+    private static <S> Optional<S> bestNeighbour(SearchSpace<S> space, S solution, List<S> excluded) {
         S best = null;
         for (var neighbour : space.neighbours(solution)) {
+            if (excluded.contains(neighbour)) {
+                continue;
+            }
             if (best == null || space.fitness(neighbour) > space.fitness(best)) {
                 best = neighbour;
             }
