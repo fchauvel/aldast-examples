@@ -1,0 +1,24 @@
+import java.util.List;
+
+// A problem whose solutions are built by making a sequence of choices.
+//
+// A *configuration* is a solution under construction: some choices have been
+// made, others have not. The configurations form a tree. The root is the
+// *empty* configuration, where nothing is decided. Each choice leads to a
+// child, and a *complete* configuration, where everything is decided, is a
+// leaf.
+public interface Problem<C> {
+
+    // The configuration where nothing is decided yet
+    C empty();
+
+    // The configurations we get by making one more choice
+    List<C> extensions(C configuration);
+
+    // Has everything been decided?
+    boolean isComplete(C configuration);
+
+    // Does the configuration respect the constraints of the problem? If a
+    // configuration is not valid, none of its extensions is.
+    boolean isValid(C configuration);
+}
