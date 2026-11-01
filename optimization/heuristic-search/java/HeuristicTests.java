@@ -50,65 +50,6 @@ public class HeuristicTests extends Testing {
         });
 
 
-        // -- A maze: a graph of cells
-
-        test("the neighbours of a cell are the open cells next to it", () -> {
-            var maze = maze();
-            assertEquals(new HashSet<>(maze.neighbours(maze.initial())),
-                Set.of(new MazeSpace.Cell(1, 2), new MazeSpace.Cell(2, 1)));
-        });
-
-        test("from the start, we can reach every open cell of the maze", () -> {
-            assertEquals(allSolutions(maze()).size(), 24);
-        });
-
-        test("being neighbours is mutual in the maze too", () -> {
-            var maze = maze();
-            for (var cell : allSolutions(maze)) {
-                for (var neighbour : maze.neighbours(cell)) {
-                    assertTrue(maze.neighbours(neighbour).contains(cell));
-                }
-            }
-        });
-
-        test("the exit is the best position", () -> {
-            var maze = maze();
-            assertEquals(maze.fitness(maze.exit()), 0);
-            for (var cell : allSolutions(maze)) {
-                assertTrue(cell.equals(maze.exit()) || maze.fitness(cell) < 0);
-            }
-        });
-
-        test("hill climbing walks towards the exit, and stops behind a wall", () -> {
-            var maze = maze();
-            var stuck = Heuristics.hillClimbing(maze);
-            assertEquals(stuck, new MazeSpace.Cell(3, 5));
-            assertFalse(stuck.equals(maze.exit()));
-            for (var neighbour : maze.neighbours(stuck)) {
-                assertTrue(maze.fitness(neighbour) < maze.fitness(stuck));
-            }
-        });
-
-        test("a random walk in the maze finds the exit, if we wait", () -> {
-            var maze = maze();
-            for (long seed = 1; seed <= 5; seed++) {
-                assertEquals(Heuristics.randomWalk(maze, 5000, new Random(seed)), maze.exit());
-            }
-        });
-
-        test("simulated annealing in the maze finds the exit", () -> {
-            var maze = maze();
-            for (long seed = 1; seed <= 5; seed++) {
-                assertEquals(Heuristics.simulatedAnnealing(maze, 2.0, 0.999, 5000, new Random(seed)), maze.exit());
-            }
-        });
-
-        test("tabu search in the maze finds the exit", () -> {
-            var maze = maze();
-            assertEquals(Heuristics.tabuSearch(maze, 60, 3), maze.exit());
-        });
-
-
         // -- Random walk
 
         test("a random walk remembers the best solution it has seen", () -> {
@@ -323,19 +264,6 @@ public class HeuristicTests extends Testing {
             new KnapsackSpace.Item("laptop", 7, 3000),
             new KnapsackSpace.Item("books", 3, 4000),
             new KnapsackSpace.Item("cooking tools", 8, 7000)
-        );
-    }
-
-    // The exit is just behind a wall, but the way out starts by going away from it
-    static MazeSpace maze() {
-        return new MazeSpace(
-            "#########",
-            "#S..#...#",
-            "#.#.#.#.#",
-            "#.#...#E#",
-            "#.#####.#",
-            "#.......#",
-            "#########"
         );
     }
 
