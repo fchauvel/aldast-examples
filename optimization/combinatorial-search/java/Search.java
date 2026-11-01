@@ -68,7 +68,7 @@ public class Search {
 
     // The best solution, with branch-and-bound. We keep the *floor*: the highest
     // lower bound we have seen, that is, the value we are sure to reach. We give
-    // up on a configuration if even its upper bound is below the floor.
+    // up on a configuration that cannot beat what we already have.
     public static <C> Optional<C> branchAndBound(OptimizationProblem<C> problem) {
         var progress = new Progress<C>();
         branchAndBound(problem, problem.empty(), progress);
@@ -80,7 +80,7 @@ public class Search {
             return;
         }
         progress.floor = Math.max(progress.floor, problem.lowerBound(configuration));
-        if (problem.upperBound(configuration) < progress.floor) {
+        if (progress.isHopeless(problem, configuration)) {
             return;
         }
         if (problem.isComplete(configuration)) {
@@ -107,7 +107,7 @@ public class Search {
                 continue;
             }
             progress.floor = Math.max(progress.floor, problem.lowerBound(configuration));
-            if (problem.upperBound(configuration) < progress.floor) {
+            if (progress.isHopeless(problem, configuration)) {
                 break; // The most promising one is not promising enough: we are done
             }
             if (problem.isComplete(configuration)) {
@@ -124,6 +124,14 @@ public class Search {
     private static class Progress<C> {
         C best = null;
         int floor = Integer.MIN_VALUE;
+
+        // Is it pointless to explore this configuration? It is if it cannot reach
+        // the floor, or if it cannot do better than the best solution we hold.
+        boolean isHopeless(OptimizationProblem<C> problem, C configuration) {
+            int upperBound = problem.upperBound(configuration);
+            return upperBound < floor
+                || (best != null && upperBound <= problem.value(best));
+        }
 
         void keepIfBetter(OptimizationProblem<C> problem, C solution) {
             if (best == null || problem.value(solution) > problem.value(best)) {
