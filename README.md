@@ -28,6 +28,7 @@ Each topic folder has a short README and, when available, its tests.
 | Graphs | [Minimum spanning trees](graphs/minimum-spanning-tree/java) | Java |
 | Optimization | [Combinatorial search](optimization/combinatorial-search/java) | Java |
 | Optimization | [Dynamic programming](optimization/dynamic-programming/java) | Java |
+| Optimization | [Heuristic search](optimization/heuristic-search/java) | Java |
 
 The examples of the other modules (Foundations, Recursion, Hashing) are
 all in the lecture notes.
