@@ -1,11 +1,18 @@
-// A problem where we do not look for any solution, but for the best one
+// A problem where we do not look for any solution, but for the best one.
+//
+// Only a solution, that is, a complete and valid configuration, has a value.
+// For the other configurations, the problem anticipates the worst and the best
+// outcome of exploring them further, with a lower and an upper bound.
 public interface OptimizationProblem<C> extends Problem<C> {
 
-    // How good the choices made so far are. The higher, the better. For a
-    // complete configuration, this is what the problem wants to maximize.
-    int value(C configuration);
+    // How good a solution is. The higher, the better.
+    int value(C solution);
 
-    // An optimistic estimate: no solution below this configuration is worth
-    // more than this upper bound. It never underestimates.
+    // The worst outcome: from a valid configuration, we can reach a solution
+    // worth at least this lower bound.
+    int lowerBound(C configuration);
+
+    // The best outcome: no solution below this configuration is worth more
+    // than this upper bound.
     int upperBound(C configuration);
 }

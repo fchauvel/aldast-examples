@@ -1,5 +1,5 @@
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -110,27 +110,37 @@ public class SearchTests extends Testing {
             assertTrue(withBound.expanded.size() < withPruning.expanded.size());
         });
 
-        test("the upper bound never underestimates what we can still get", () -> {
+        test("the bounds bracket every solution below a configuration", () -> {
             var problem = box(10);
-            checkBoundsBelow(problem, problem.empty());
+            checkBracketsBelow(problem, problem.empty());
         });
 
-        test("what we hold now never exceeds the upper bound", () -> {
+        test("at a solution, both bounds are its value", () -> {
             var problem = box(10);
-            checkValuesBelow(problem, problem.empty());
+            for (var solution : Search.withPruning(problem)) {
+                assertEquals(problem.lowerBound(solution), problem.value(solution));
+                assertEquals(problem.upperBound(solution), problem.value(solution));
+            }
+        });
+
+        test("from a valid configuration, we can reach a solution worth the lower bound", () -> {
+            var problem = box(10);
+            checkLowerBoundsAreReachable(problem, problem.empty());
         });
 
         test("the order of the choices changes the work, not the result", () -> {
-            var items = new ArrayList<>(items());
-            var asListed = new Counting.OfOptimization<>(new Knapsack(items, 10));
-            Collections.reverse(items);
-            var reversed = new Counting.OfOptimization<>(new Knapsack(items, 10));
+            var asListed = items();
+            var leastValuableFirst = new ArrayList<>(items());
+            leastValuableFirst.sort(Comparator.comparingInt(Knapsack.Item::value));
 
-            var best = Search.branchAndBound(asListed).get();
-            var bestReversed = Search.branchAndBound(reversed).get();
-            assertEquals(box(10).value(best), 16000);
-            assertEquals(new Knapsack(items, 10).value(bestReversed), 16000);
-            assertFalse(asListed.expanded.size() == reversed.expanded.size());
+            var searchAsListed = new Counting.OfOptimization<>(new Knapsack(asListed, 10));
+            var searchLeastValuableFirst = new Counting.OfOptimization<>(new Knapsack(leastValuableFirst, 10));
+            var best = Search.branchAndBound(searchAsListed).get();
+            var bestOtherOrder = Search.branchAndBound(searchLeastValuableFirst).get();
+
+            assertEquals(new Knapsack(asListed, 10).value(best), 16000);
+            assertEquals(new Knapsack(leastValuableFirst, 10).value(bestOtherOrder), 16000);
+            assertTrue(searchAsListed.expanded.size() < searchLeastValuableFirst.expanded.size());
         });
 
         test("the best box can be empty", () -> {
@@ -184,33 +194,42 @@ public class SearchTests extends Testing {
         return new Knapsack(items(), capacity);
     }
 
-    // Checks that the upper bound of every configuration is at least what
-    // the best valid solution below it is worth
-    static <C> int checkBoundsBelow(OptimizationProblem<C> problem, C configuration) {
-        int bestBelow = Integer.MIN_VALUE;
+    // Checks that, for every configuration, the value of every solution below
+    // it is between its lower and its upper bound. Returns these solutions.
+    static <C> List<Integer> checkBracketsBelow(OptimizationProblem<C> problem, C configuration) {
+        var values = new ArrayList<Integer>();
         if (problem.isComplete(configuration)) {
             if (problem.isValid(configuration)) {
-                bestBelow = problem.value(configuration);
+                values.add(problem.value(configuration));
             }
         } else {
             for (var next : problem.children(configuration)) {
-                bestBelow = Math.max(bestBelow, checkBoundsBelow(problem, next));
+                values.addAll(checkBracketsBelow(problem, next));
             }
         }
-        if (bestBelow != Integer.MIN_VALUE) {
-            assertTrue(problem.upperBound(configuration) >= bestBelow);
+        for (var value : values) {
+            assertTrue(problem.lowerBound(configuration) <= value);
+            assertTrue(value <= problem.upperBound(configuration));
         }
-        return bestBelow;
+        return values;
     }
 
-    // Checks that, for every configuration, the value of the choices made so
-    // far is no more than the upper bound
-    static <C> void checkValuesBelow(OptimizationProblem<C> problem, C configuration) {
-        assertTrue(problem.value(configuration) <= problem.upperBound(configuration));
-        if (!problem.isComplete(configuration)) {
+    // Checks that, from every valid configuration, there is a solution worth at
+    // least the lower bound. Returns the values of the solutions below.
+    static <C> List<Integer> checkLowerBoundsAreReachable(OptimizationProblem<C> problem, C configuration) {
+        var values = new ArrayList<Integer>();
+        if (problem.isComplete(configuration)) {
+            if (problem.isValid(configuration)) {
+                values.add(problem.value(configuration));
+            }
+        } else {
             for (var next : problem.children(configuration)) {
-                checkValuesBelow(problem, next);
+                values.addAll(checkLowerBoundsAreReachable(problem, next));
             }
         }
+        if (problem.isValid(configuration)) {
+            assertTrue(values.stream().anyMatch(value -> value >= problem.lowerBound(configuration)));
+        }
+        return values;
     }
 }

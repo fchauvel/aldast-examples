@@ -5,7 +5,7 @@ Searching by enumeration, with pruning, and with branch-and-bound, from the
 
 - `Problem.java` and `OptimizationProblem.java` describe what a problem must
   offer for the searches to work: configurations, the choices we can make,
-  and, for optimization, a value and an upper bound.
+  and, for optimization, a value, and a lower and an upper bound.
 - `Search.java` has the searches: `exhaustive`, `withPruning`,
   `anySolution`, `branchAndBound` and `bestFirst`.
 - `Knapsack.java` and `NQueens.java` are two problems to search.

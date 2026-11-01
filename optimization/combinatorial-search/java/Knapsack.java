@@ -40,21 +40,31 @@ public class Knapsack implements OptimizationProblem<List<Boolean>> {
         return weightOf(configuration) <= capacity;
     }
 
-    public int value(List<Boolean> configuration) {
+    // The total value of the items we take
+    public int value(List<Boolean> solution) {
+        return valueOfTakenItems(solution);
+    }
+
+    // At worst, we leave all the items we have not decided about
+    public int lowerBound(List<Boolean> configuration) {
+        return valueOfTakenItems(configuration);
+    }
+
+    // At best, we will be able to take all the items we have not decided about
+    public int upperBound(List<Boolean> configuration) {
+        int total = valueOfTakenItems(configuration);
+        for (int i = configuration.size(); i < items.size(); i++) {
+            total += items.get(i).value();
+        }
+        return total;
+    }
+
+    private int valueOfTakenItems(List<Boolean> configuration) {
         int total = 0;
         for (int i = 0; i < configuration.size(); i++) {
             if (configuration.get(i)) {
                 total += items.get(i).value();
             }
-        }
-        return total;
-    }
-
-    // At best, we will be able to take all the items we have not decided about
-    public int upperBound(List<Boolean> configuration) {
-        int total = value(configuration);
-        for (int i = configuration.size(); i < items.size(); i++) {
-            total += items.get(i).value();
         }
         return total;
     }

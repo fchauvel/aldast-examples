@@ -66,29 +66,28 @@ public class Search {
         return Optional.empty();
     }
 
-    // The best solution, with branch-and-bound: we give up on a configuration
-    // if even its upper bound is no better than the best solution found so far
+    // The best solution, with branch-and-bound. We keep the *floor*: the highest
+    // lower bound we have seen, that is, the value we are sure to reach. We give
+    // up on a configuration if even its upper bound is below the floor.
     public static <C> Optional<C> branchAndBound(OptimizationProblem<C> problem) {
-        var best = new Best<C>();
-        branchAndBound(problem, problem.empty(), best);
-        return Optional.ofNullable(best.configuration);
+        var progress = new Progress<C>();
+        branchAndBound(problem, problem.empty(), progress);
+        return Optional.ofNullable(progress.best);
     }
 
-    private static <C> void branchAndBound(OptimizationProblem<C> problem, C configuration, Best<C> best) {
+    private static <C> void branchAndBound(OptimizationProblem<C> problem, C configuration, Progress<C> progress) {
         if (!problem.isValid(configuration)) {
             return;
         }
-        if (best.configuration != null && problem.upperBound(configuration) <= best.value) {
+        progress.floor = Math.max(progress.floor, problem.lowerBound(configuration));
+        if (problem.upperBound(configuration) < progress.floor) {
             return;
         }
         if (problem.isComplete(configuration)) {
-            if (best.configuration == null || problem.value(configuration) > best.value) {
-                best.configuration = configuration;
-                best.value = problem.value(configuration);
-            }
+            progress.keepIfBetter(problem, configuration);
         } else {
             for (var next : problem.children(configuration)) {
-                branchAndBound(problem, next, best);
+                branchAndBound(problem, next, progress);
             }
         }
     }
@@ -101,30 +100,35 @@ public class Search {
         );
         promising.add(problem.empty());
 
-        var best = new Best<C>();
+        var progress = new Progress<C>();
         while (!promising.isEmpty()) {
             var configuration = promising.poll();
             if (!problem.isValid(configuration)) {
                 continue;
             }
-            if (best.configuration != null && problem.upperBound(configuration) <= best.value) {
+            progress.floor = Math.max(progress.floor, problem.lowerBound(configuration));
+            if (problem.upperBound(configuration) < progress.floor) {
                 break; // The most promising one is not promising enough: we are done
             }
             if (problem.isComplete(configuration)) {
-                if (best.configuration == null || problem.value(configuration) > best.value) {
-                    best.configuration = configuration;
-                    best.value = problem.value(configuration);
-                }
+                progress.keepIfBetter(problem, configuration);
             } else {
                 promising.addAll(problem.children(configuration));
             }
         }
-        return Optional.ofNullable(best.configuration);
+        return Optional.ofNullable(progress.best);
     }
 
-    // The best configuration found so far, and its value
-    private static class Best<C> {
-        C configuration = null;
-        int value = 0;
+    // What we know so far: the best solution found, and the value we are sure
+    // to reach, even if we have not found the solution yet
+    private static class Progress<C> {
+        C best = null;
+        int floor = Integer.MIN_VALUE;
+
+        void keepIfBetter(OptimizationProblem<C> problem, C solution) {
+            if (best == null || problem.value(solution) > problem.value(best)) {
+                best = solution;
+            }
+        }
     }
 }

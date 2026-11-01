@@ -32,6 +32,7 @@ public class Counting {
         public boolean isComplete(C c) { return problem.isComplete(c); }
         public boolean isValid(C c) { return problem.isValid(c); }
         public int value(C c) { return problem.value(c); }
+        public int lowerBound(C c) { return problem.lowerBound(c); }
         public int upperBound(C c) { return problem.upperBound(c); }
     }
 }
