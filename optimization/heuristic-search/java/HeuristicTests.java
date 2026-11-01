@@ -35,6 +35,15 @@ public class HeuristicTests extends Testing {
             }
         });
 
+        test("being neighbours is mutual", () -> {
+            var space = box();
+            for (var solution : allSolutions(space)) {
+                for (var neighbour : space.neighbours(solution)) {
+                    assertTrue(space.neighbours(neighbour).contains(solution));
+                }
+            }
+        });
+
         test("nine boxes can be filled without breaking the limit", () -> {
             assertEquals(allSolutions(box()).size(), 9);
         });
