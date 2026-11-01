@@ -24,7 +24,7 @@ public class Knapsack implements OptimizationProblem<List<Boolean>> {
     }
 
     // For the next item, we can take it or leave it
-    public List<List<Boolean>> extensions(List<Boolean> configuration) {
+    public List<List<Boolean>> children(List<Boolean> configuration) {
         return List.of(
             with(configuration, true),
             with(configuration, false)
@@ -51,7 +51,7 @@ public class Knapsack implements OptimizationProblem<List<Boolean>> {
     }
 
     // At best, we will be able to take all the items we have not decided about
-    public int bound(List<Boolean> configuration) {
+    public int upperBound(List<Boolean> configuration) {
         int total = value(configuration);
         for (int i = configuration.size(); i < items.size(); i++) {
             total += items.get(i).value();

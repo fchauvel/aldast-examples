@@ -19,7 +19,7 @@ public class NQueens implements Problem<List<Integer>> {
     }
 
     // The next queen can go in any row of the next column
-    public List<List<Integer>> extensions(List<Integer> configuration) {
+    public List<List<Integer>> children(List<Integer> configuration) {
         var result = new ArrayList<List<Integer>>();
         for (int row = 0; row < size; row++) {
             var extended = new ArrayList<>(configuration);

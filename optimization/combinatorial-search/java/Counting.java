@@ -14,7 +14,7 @@ public class Counting {
         }
 
         public C empty() { return problem.empty(); }
-        public List<C> extensions(C c) { expanded.add(c); return problem.extensions(c); }
+        public List<C> children(C c) { expanded.add(c); return problem.children(c); }
         public boolean isComplete(C c) { return problem.isComplete(c); }
         public boolean isValid(C c) { return problem.isValid(c); }
     }
@@ -28,10 +28,10 @@ public class Counting {
         }
 
         public C empty() { return problem.empty(); }
-        public List<C> extensions(C c) { expanded.add(c); return problem.extensions(c); }
+        public List<C> children(C c) { expanded.add(c); return problem.children(c); }
         public boolean isComplete(C c) { return problem.isComplete(c); }
         public boolean isValid(C c) { return problem.isValid(c); }
         public int value(C c) { return problem.value(c); }
-        public int bound(C c) { return problem.bound(c); }
+        public int upperBound(C c) { return problem.upperBound(c); }
     }
 }

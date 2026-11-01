@@ -24,6 +24,19 @@ public class SearchTests extends Testing {
             assertEquals(Search.withPruning(new NQueens(8)).size(), 92);
         });
 
+        test("only complete and valid configurations are solutions", () -> {
+            var queens = new NQueens(5);
+            for (var solution : Search.withPruning(queens)) {
+                assertEquals(solution.size(), 5);          // one queen per column
+                assertTrue(queens.isValid(solution));
+            }
+            var box = box(10);
+            for (var solution : Search.withPruning(box)) {
+                assertEquals(solution.size(), 4);          // a decision for every item
+                assertTrue(box.isValid(solution));
+            }
+        });
+
         test("there is no way to place three queens", () -> {
             assertEquals(Search.exhaustive(new NQueens(3)).size(), 0);
         });
@@ -97,9 +110,14 @@ public class SearchTests extends Testing {
             assertTrue(withBound.expanded.size() < withPruning.expanded.size());
         });
 
-        test("the bound never underestimates what we can still get", () -> {
+        test("the upper bound never underestimates what we can still get", () -> {
             var problem = box(10);
             checkBoundsBelow(problem, problem.empty());
+        });
+
+        test("what we hold now never exceeds the upper bound", () -> {
+            var problem = box(10);
+            checkValuesBelow(problem, problem.empty());
         });
 
         test("the order of the choices changes the work, not the result", () -> {
@@ -141,7 +159,7 @@ public class SearchTests extends Testing {
             var search = new Counting.OfOptimization<>(box(10));
             Search.bestFirst(search);
             for (var configuration : search.expanded) {
-                assertTrue(search.bound(configuration) >= 16000);
+                assertTrue(search.upperBound(configuration) >= 16000);
             }
         });
 
@@ -166,8 +184,8 @@ public class SearchTests extends Testing {
         return new Knapsack(items(), capacity);
     }
 
-    // Checks that the bound of every configuration is at least what the
-    // best valid solution below it is worth
+    // Checks that the upper bound of every configuration is at least what
+    // the best valid solution below it is worth
     static <C> int checkBoundsBelow(OptimizationProblem<C> problem, C configuration) {
         int bestBelow = Integer.MIN_VALUE;
         if (problem.isComplete(configuration)) {
@@ -175,13 +193,24 @@ public class SearchTests extends Testing {
                 bestBelow = problem.value(configuration);
             }
         } else {
-            for (var next : problem.extensions(configuration)) {
+            for (var next : problem.children(configuration)) {
                 bestBelow = Math.max(bestBelow, checkBoundsBelow(problem, next));
             }
         }
         if (bestBelow != Integer.MIN_VALUE) {
-            assertTrue(problem.bound(configuration) >= bestBelow);
+            assertTrue(problem.upperBound(configuration) >= bestBelow);
         }
         return bestBelow;
+    }
+
+    // Checks that, for every configuration, the value of the choices made so
+    // far is no more than the upper bound
+    static <C> void checkValuesBelow(OptimizationProblem<C> problem, C configuration) {
+        assertTrue(problem.value(configuration) <= problem.upperBound(configuration));
+        if (!problem.isComplete(configuration)) {
+            for (var next : problem.children(configuration)) {
+                checkValuesBelow(problem, next);
+            }
+        }
     }
 }

@@ -18,14 +18,14 @@ public class Search {
                 solutions.add(configuration);
             }
         } else {
-            for (var next : problem.extensions(configuration)) {
+            for (var next : problem.children(configuration)) {
                 exhaustive(problem, next, solutions);
             }
         }
     }
 
     // All the solutions, but we give up on a configuration as soon as it is
-    // invalid: none of its extensions can be valid
+    // invalid: none of its children can be valid
     public static <C> List<C> withPruning(Problem<C> problem) {
         var solutions = new ArrayList<C>();
         withPruning(problem, problem.empty(), solutions);
@@ -39,7 +39,7 @@ public class Search {
         if (problem.isComplete(configuration)) {
             solutions.add(configuration);
         } else {
-            for (var next : problem.extensions(configuration)) {
+            for (var next : problem.children(configuration)) {
                 withPruning(problem, next, solutions);
             }
         }
@@ -57,7 +57,7 @@ public class Search {
         if (problem.isComplete(configuration)) {
             return Optional.of(configuration);
         }
-        for (var next : problem.extensions(configuration)) {
+        for (var next : problem.children(configuration)) {
             var solution = anySolution(problem, next);
             if (solution.isPresent()) {
                 return solution;
@@ -67,7 +67,7 @@ public class Search {
     }
 
     // The best solution, with branch-and-bound: we give up on a configuration
-    // if even its bound is no better than the best solution found so far
+    // if even its upper bound is no better than the best solution found so far
     public static <C> Optional<C> branchAndBound(OptimizationProblem<C> problem) {
         var best = new Best<C>();
         branchAndBound(problem, problem.empty(), best);
@@ -78,7 +78,7 @@ public class Search {
         if (!problem.isValid(configuration)) {
             return;
         }
-        if (best.configuration != null && problem.bound(configuration) <= best.value) {
+        if (best.configuration != null && problem.upperBound(configuration) <= best.value) {
             return;
         }
         if (problem.isComplete(configuration)) {
@@ -87,17 +87,17 @@ public class Search {
                 best.value = problem.value(configuration);
             }
         } else {
-            for (var next : problem.extensions(configuration)) {
+            for (var next : problem.children(configuration)) {
                 branchAndBound(problem, next, best);
             }
         }
     }
 
     // The same, but we always continue with the most promising configuration
-    // (the one with the highest bound), instead of going deep first
+    // (the one with the highest upper bound), instead of going deep first
     public static <C> Optional<C> bestFirst(OptimizationProblem<C> problem) {
         var promising = new PriorityQueue<C>(
-            (first, second) -> Integer.compare(problem.bound(second), problem.bound(first))
+            (first, second) -> Integer.compare(problem.upperBound(second), problem.upperBound(first))
         );
         promising.add(problem.empty());
 
@@ -107,7 +107,7 @@ public class Search {
             if (!problem.isValid(configuration)) {
                 continue;
             }
-            if (best.configuration != null && problem.bound(configuration) <= best.value) {
+            if (best.configuration != null && problem.upperBound(configuration) <= best.value) {
                 break; // The most promising one is not promising enough: we are done
             }
             if (problem.isComplete(configuration)) {
@@ -116,7 +116,7 @@ public class Search {
                     best.value = problem.value(configuration);
                 }
             } else {
-                promising.addAll(problem.extensions(configuration));
+                promising.addAll(problem.children(configuration));
             }
         }
         return Optional.ofNullable(best.configuration);
