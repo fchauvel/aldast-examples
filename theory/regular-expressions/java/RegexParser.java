@@ -1,0 +1,84 @@
+// One method per rule of the grammar:
+//
+//   expression := term ( '|' term )*
+//   term       := factor factor*
+//   factor     := atom '*'*
+//   atom       := a symbol | '(' expression ')'
+//
+// The rules call each other just like the nodes of the tree contain each other.
+// The lower a rule is, the tighter it binds: this is the operator precedence.
+class RegexParser {
+
+    private final String pattern;
+    private int position = 0;
+
+    RegexParser(String pattern) {
+        this.pattern = pattern;
+    }
+
+    Regex parse() {
+        var result = expression();
+        if (position < pattern.length()) {
+            throw new IllegalArgumentException("Unexpected '" + peek() + "' at " + position);
+        }
+        return result;
+    }
+
+    private Regex expression() {
+        var result = term();
+        while (hasNext() && peek() == '|') {
+            position++;
+            result = new Regex.Or(result, term());
+        }
+        return result;
+    }
+
+    private Regex term() {
+        var result = factor();
+        while (hasNext() && peek() != '|' && peek() != ')') {
+            result = new Regex.Then(result, factor());
+        }
+        return result;
+    }
+
+    private Regex factor() {
+        var result = atom();
+        while (hasNext() && peek() == '*') {
+            position++;
+            result = new Regex.Star(result);
+        }
+        return result;
+    }
+
+    private Regex atom() {
+        if (!hasNext()) {
+            throw new IllegalArgumentException("Unexpected end of pattern");
+        }
+        var next = peek();
+        position++;
+        if (next == '(') {
+            var result = expression();
+            expect(')');
+            return result;
+        }
+        if (next == '|' || next == '*' || next == ')') {
+            throw new IllegalArgumentException("Unexpected '" + next + "' at " + (position - 1));
+        }
+        return new Regex.Symbol(next);
+    }
+
+    private void expect(char expected) {
+        if (!hasNext() || peek() != expected) {
+            throw new IllegalArgumentException("Expected '" + expected + "' at " + position);
+        }
+        position++;
+    }
+
+    private boolean hasNext() {
+        return position < pattern.length();
+    }
+
+    private char peek() {
+        return pattern.charAt(position);
+    }
+}
