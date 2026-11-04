@@ -52,6 +52,11 @@ public class RegexTests extends Testing {
             }
         });
 
+        test("E+ is read as E followed by E*", () -> {
+            assertEquals(Regex.parse("b+"), Regex.parse("bb*"));
+            assertEquals(Regex.parse("(ab)+"), Regex.parse("(ab)(ab)*"));
+        });
+
         test("unbalanced parentheses are rejected", () -> {
             try {
                 Regex.parse("(ab");

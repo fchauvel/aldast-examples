@@ -2,11 +2,13 @@
 //
 //   expression := term ( '|' term )*
 //   term       := factor factor*
-//   factor     := atom '*'*
+//   factor     := atom ( '*' | '+' )*
 //   atom       := a symbol | '(' expression ')'
 //
 // The rules call each other just like the nodes of the tree contain each other.
 // The lower a rule is, the tighter it binds: this is the operator precedence.
+//
+// The wildcard '+' brings no new kind of node: "E+" is read as "EE*".
 class RegexParser {
 
     private final String pattern;
@@ -43,9 +45,13 @@ class RegexParser {
 
     private Regex factor() {
         var result = atom();
-        while (hasNext() && peek() == '*') {
+        while (hasNext() && (peek() == '*' || peek() == '+')) {
+            if (peek() == '*') {
+                result = new Regex.Star(result);
+            } else {
+                result = new Regex.Then(result, new Regex.Star(result));
+            }
             position++;
-            result = new Regex.Star(result);
         }
         return result;
     }
@@ -61,7 +67,7 @@ class RegexParser {
             expect(')');
             return result;
         }
-        if (next == '|' || next == '*' || next == ')') {
+        if (next == '|' || next == '*' || next == '+' || next == ')') {
             throw new IllegalArgumentException("Unexpected '" + next + "' at " + (position - 1));
         }
         return new Regex.Symbol(next);
