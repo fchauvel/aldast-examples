@@ -87,6 +87,19 @@ public class RegexTests extends Testing {
             assertFalse(matches("a*|b", "ab"));
         });
 
+        test("sheep say b, then any number of a, then !", () -> {
+            assertTrue(matches("ba*!", "b!"));
+            assertTrue(matches("ba*!", "baaa!"));
+            assertFalse(matches("ba*!", "baaa"));
+            assertFalse(matches("ba*!", "ab!"));
+        });
+
+        test("the + wildcard is a shorthand for a symbol, then a star", () -> {
+            for (var word : allWords("ba!", 5)) {
+                assertEquals(matches("baa+!", word), matches("baaa*!", word));
+            }
+        });
+
         test("the sheep language: baa*!", () -> {
             assertTrue(matches("baaa*!", "baa!"));
             assertTrue(matches("baaa*!", "baaaaa!"));
