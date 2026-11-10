@@ -1,12 +1,22 @@
-// One method per rule of the grammar:
+// One method per rule of the grammar. Each choice has its own line, and the
+// symbols of the pattern are between quotes:
 //
-//   expression := term ( '|' term )*
-//   term       := factor factor*
-//   factor     := atom ( '*' | '+' )*
-//   atom       := a symbol | '(' expression ')'
+//   expression  :=  term
+//   expression  :=  term '|' expression
 //
-// The rules call each other just like the nodes of the tree contain each other.
-// The lower a rule is, the tighter it binds: this is the operator precedence.
+//   term        :=  factor
+//   term        :=  factor term
+//
+//   factor      :=  atom
+//   factor      :=  atom '*'
+//   factor      :=  atom '+'
+//
+//   atom        :=  a symbol
+//   atom        :=  '(' expression ')'
+//
+// The rules call each other, and even themselves, just like the nodes of the
+// tree contain each other. The lower a rule is, the tighter it binds: this is
+// the operator precedence.
 //
 // The wildcard '+' brings no new kind of node: "E+" is read as "EE*".
 class RegexParser {
@@ -27,33 +37,33 @@ class RegexParser {
     }
 
     private Regex expression() {
-        var result = term();
-        while (hasNext() && peek() == '|') {
+        var first = term();
+        if (hasNext() && peek() == '|') {
             position++;
-            result = new Regex.Or(result, term());
+            return new Regex.Or(first, expression());
         }
-        return result;
+        return first;
     }
 
     private Regex term() {
-        var result = factor();
-        while (hasNext() && peek() != '|' && peek() != ')') {
-            result = new Regex.Then(result, factor());
+        var first = factor();
+        if (hasNext() && peek() != '|' && peek() != ')') {
+            return new Regex.Then(first, term());
         }
-        return result;
+        return first;
     }
 
     private Regex factor() {
-        var result = atom();
-        while (hasNext() && (peek() == '*' || peek() == '+')) {
-            if (peek() == '*') {
-                result = new Regex.Star(result);
-            } else {
-                result = new Regex.Then(result, new Regex.Star(result));
-            }
+        var inner = atom();
+        if (hasNext() && peek() == '*') {
             position++;
+            return new Regex.Star(inner);
         }
-        return result;
+        if (hasNext() && peek() == '+') {
+            position++;
+            return new Regex.Then(inner, new Regex.Star(inner));
+        }
+        return inner;
     }
 
     private Regex atom() {

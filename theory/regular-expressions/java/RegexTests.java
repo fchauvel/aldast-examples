@@ -57,6 +57,14 @@ public class RegexTests extends Testing {
             assertEquals(Regex.parse("(ab)+"), Regex.parse("(ab)(ab)*"));
         });
 
+        test("alternatives and factors can be chained", () -> {
+            assertTrue(matches("a|b|c", "c"));
+            assertTrue(matches("a|b|c", "a"));
+            assertFalse(matches("a|b|c", "d"));
+            assertTrue(matches("abcd", "abcd"));
+            assertFalse(matches("abcd", "abc"));
+        });
+
         test("unbalanced parentheses are rejected", () -> {
             try {
                 Regex.parse("(ab");
